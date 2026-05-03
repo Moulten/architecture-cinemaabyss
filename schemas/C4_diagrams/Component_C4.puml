@@ -1,0 +1,90 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "User")
+
+System_Ext(payment, "Payment Service", "External payment service")
+System_Ext(extRecommendSystem, "Recommendation System", "External recommendation system")
+System_Ext(extCinemaServices, "External Cinema Services", "External partner cinema services")
+
+Container(api, "API Gateway", "Kong", "Handle requests from users from different device types")
+Container(kafka, "Message Bus", "Kafka", "Async event streaming between services")
+
+
+Container_Boundary(contentSystem, "Content System") {
+    Component(contentSystemApi, "Content API", "Go HTTP", "Explore movie library, view collections")
+    Component(libraryService, "Library Service", "Go", "Provide whole library and make search")
+    Component(recommendService, "Recommendation Service", "Go", "Adapter to external recommendation system")
+    Component(favoriteService, "Favorite Collection Service", "Go", "Manage collections with favorite movies for users")
+    ComponentDb(contentDb, "Content DB", "PostgreSQL", "Store movies catalog, collections and favorites")
+
+    Rel(contentSystemApi, libraryService, "HTTP")
+    Rel(contentSystemApi, recommendService, "HTTP")
+    Rel(contentSystemApi, favoriteService, "HTTP")
+
+    Rel(libraryService, contentDb, "SQL")
+    Rel(recommendService, contentDb, "SQL")
+    Rel(favoriteService, contentDb, "SQL")
+
+    Rel(libraryService, extCinemaServices, "HTTP", "fetch catalog")
+    Rel(recommendService, extRecommendSystem, "HTTP", "fetch recommendations")
+
+    Rel(favoriteService, kafka, "publishes", "FavoriteAdded / MovieRated")
+
+    Rel(kafka, libraryService, "subscribes", "SubscriptionActivated / SubscriptionExpired")
+}
+
+Container_Boundary(playbackSystem, "Playback System") {
+    Component(playbackApi, "Playback API", "Go HTTP", "Handle streaming requests")
+    Component(playbackService, "Playback Service", "Go", "Proxy for streaming movies")
+    ComponentDb(playbackProgressDb, "Playback Progress DB", "MongoDB", "Cache player settings and current playback progress")
+
+    Rel(playbackApi, playbackService, "HTTP")
+    Rel(playbackService, playbackProgressDb, "query")
+    Rel(playbackService, extCinemaServices, "HTTP", "stream video")
+
+    Rel(playbackService, kafka, "publishes", "MovieWatched / MovieCompleted")
+
+    Rel(kafka, playbackService, "subscribes", "SubscriptionActivated / SubscriptionExpired")
+}
+
+Container_Boundary(movieInfoSystem, "Movie Info System") {
+    Component(movieInfoApi, "Movie Info API", "Go HTTP", "Serve movie metadata")
+    Component(movieInfoService, "Movie Info Service", "Go", "Manage movie metadata")
+    ComponentDb(s3, "S3", "S3 Bucket", "Store pictures, trailers and long-form content")
+    ComponentDb(movieInfoDb, "Movie Info DB", "MongoDB", "Store metadata: genres, actors, ratings, reviews")
+
+    Rel(movieInfoApi, movieInfoService, "HTTP")
+    Rel(movieInfoService, s3, "S3 API")
+    Rel(movieInfoService, movieInfoDb, "query")
+}
+
+Container_Boundary(userSystem, "User System") {
+    Component(userApi, "User API", "Go HTTP", "Manage user profile and subscriptions")
+    Component(userService, "User Service", "Go", "Handle user profiles, subscriptions and discounts")
+    ComponentDb(userDb, "User DB", "PostgreSQL", "Store user profiles, subscriptions and payment history")
+
+    Rel(userApi, userService, "HTTP")
+    Rel(userService, userDb, "SQL")
+    Rel(userService, payment, "HTTP", "initiate payment")
+
+    Rel(kafka, userService, "subscribes", "PaymentCompleted → activate subscription")
+
+    Rel(userService, kafka, "publishes", "SubscriptionActivated / SubscriptionExpired")
+}
+
+Rel(payment, kafka, "publishes", "PaymentCompleted")
+
+Rel(kafka, extRecommendSystem, "subscribes", "MovieWatched / FavoriteAdded / MovieRated")
+
+Rel(contentSystemApi, movieInfoSystem, "HTTP", "fetch movie metadata for search results")
+
+Rel(user, api, "Uses", "HTTPS")
+Rel(api, contentSystem, "HTTP")
+Rel(api, playbackSystem, "HTTP")
+Rel(api, movieInfoSystem, "HTTP")
+Rel(api, userSystem, "HTTP")
+
+@enduml

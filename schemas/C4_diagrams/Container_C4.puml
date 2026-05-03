@@ -1,0 +1,43 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User", "A user of cinema service")
+
+System_Ext(payment, "Payment Service", "External payment service")
+System_Ext(extRecommendSystem, "Recomendation system", "External recomendation system")
+System_Ext(extCinemaServices, "External cinema services", "External partner cinema services")
+
+Container_Boundary(system, "Cinema Abyss System") {
+    Container(api, "API Gateway", "Kong", "Handle requests from users from different devices types")
+    Container(contentSystem, "Content System", "Go, PostgreSQL", "Provide access to movies library and collections")
+    Container(playbackSystem, "Playback System", "Go", "Proxy for streaming movies from partner cinemas to user")
+    Container(movieInfoSystem, "Movie Info System", "Go, MongoDB, S3", "Provide information about movie including pictures, reviews and etc")
+    Container(userSystem, "User System", "Go, PostgreSQL", "Manage user profiles, subscriptions and discounts")
+    Container(kafka, "Message Bus", "Kafka", "Async event streaming between services")
+}
+
+
+Rel(user, api, "Uses", "HTTPS")
+
+Rel(api, contentSystem, "HTTP")
+Rel(api, movieInfoSystem, "HTTP")
+Rel(api, userSystem, "HTTP")
+Rel(api, playbackSystem, "HTTP")
+
+Rel(contentSystem, movieInfoSystem, "HTTP", "fetch movie metadata for search results")
+Rel(playbackSystem, extCinemaServices, "HTTP", "stream video")
+Rel(contentSystem, extCinemaServices, "HTTP", "fetch catalog")
+
+Rel(payment, kafka, "publishes", "PaymentCompleted")
+Rel(kafka, userSystem, "subscribes", "PaymentCompleted → activate subscription")
+
+Rel(playbackSystem, kafka, "publishes", "MovieWatched / MovieCompleted")
+Rel(contentSystem, kafka, "publishes", "MovieRated / FavoriteAdded")
+Rel(kafka, extRecommendSystem, "subscribes", "user behavior events")
+
+Rel(userSystem, kafka, "publishes", "SubscriptionActivated / SubscriptionExpired")
+Rel(kafka, contentSystem, "subscribes", "update local subscription cache")
+Rel(kafka, playbackSystem, "subscribes", "update local subscription cache")
+
+@enduml
