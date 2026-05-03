@@ -79,6 +79,20 @@
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
 Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090 
 
+#### Результаты тестов (22 запроса, 42 assertion, все пройдены)
+
+![Newman Tests](./screenshots/task2_newman_tests.png)
+
+#### Kafka UI — состояние топиков
+
+![Kafka UI](./screenshots/task2_kafka_ui.png)
+
+![Kafka Topics](./screenshots/task2_kafka_topics.png)
+
+#### Логи events-service (чтение событий из Kafka)
+
+![Events Logs](./screenshots/task2_events_logs.png)
+
 # Задание 3
 
 Команда начала переезд в Kubernetes для лучшего масштабирования и повышения надежности. 
@@ -293,7 +307,18 @@ cat .docker/config.json | base64
   Откройте логи event-service и сделайте скриншот обработки событий
 
 #### Шаг 3
-Добавьте сюда скриншота вывода при вызове https://cinemaabyss.example.com/api/movies и  скриншот вывода event-service после вызова тестов.
+
+##### Вывод GET https://cinemaabyss.example.com/api/movies (через Kubernetes Ingress)
+
+![K8s API Movies](./screenshots/task3_k8s_api_movies.png)
+
+##### Поды Kubernetes
+
+![K8s Pods](./screenshots/task3_k8s_pods.png)
+
+##### Логи events-service (Kubernetes) после вызова тестов
+
+![K8s Events Logs](./screenshots/task3_k8s_events_logs.png)
 
 
 # Задание 4
@@ -369,6 +394,18 @@ minikube tunnel
 Потом вызовите 
 https://cinemaabyss.example.com/api/movies
 и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
+
+#### Helm — статус развёртывания
+
+![Helm Status](./screenshots/task4_helm_status.png)
+
+#### Поды после helm install
+
+![K8s Pods after Helm](./screenshots/task3_k8s_pods.png)
+
+#### Вывод GET https://cinemaabyss.example.com/api/movies (Helm deployment)
+
+![K8s API Movies via Helm](./screenshots/task4_k8s_api_movies.png)
 
 ## Удаляем все
 
