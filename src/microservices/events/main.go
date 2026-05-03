@@ -232,8 +232,15 @@ func main() {
 		brokers[0] = "localhost:9092"
 	}
 
-	if err := initKafka(brokers); err != nil {
-		log.Fatalf("Failed to connect to Kafka: %v", err)
+	for i := 1; i <= 10; i++ {
+		if err := initKafka(brokers); err == nil {
+			break
+		} else if i == 10 {
+			log.Fatalf("Failed to connect to Kafka after 10 attempts: %v", err)
+		} else {
+			log.Printf("Kafka not ready, retry %d/10...", i)
+			time.Sleep(time.Duration(i) * time.Second)
+		}
 	}
 	defer producer.Close()
 
